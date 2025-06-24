@@ -2,7 +2,7 @@
 import semverInc from "semver/functions/inc.js";
 import { Config, octokit } from "./shared.js";
 import { Result } from "./types.js";
-import { createExplainComment } from "./utils.js";
+import { createExplainComment, truncatePrDescription } from "./utils.js";
 
 export async function createReleasePR(): Promise<Result> {
   const isDryRun = Config.isDryRun;
@@ -59,6 +59,9 @@ export async function createReleasePR(): Promise<Result> {
 ${Config.releaseSummary}
   `;
 
+  // Truncate the PR body if it exceeds GitHub's character limit
+  const truncatedReleasePrBody = truncatePrDescription(releasePrBody);
+
   const releaseBranch = `${Config.releaseBranchPrefix}${version}`;
   let pull_number;
 
@@ -77,7 +80,7 @@ ${Config.releaseSummary}
     const { data: pullRequest } = await octokit.rest.pulls.create({
       ...Config.repo,
       title: `Release ${releaseNotes.name || version}`,
-      body: releasePrBody,
+      body: truncatedReleasePrBody,
       head: releaseBranch,
       base: Config.prodBranch,
       maintainer_can_modify: false,
@@ -98,7 +101,7 @@ ${Config.releaseSummary}
     );
   } else {
     console.log(
-      `create_release: Dry run: would have created release branch ${releaseBranch} and PR with body:\n${releasePrBody}`,
+      `create_release: Dry run: would have created release branch ${releaseBranch} and PR with body:\n${truncatedReleasePrBody}`,
     );
   }
 

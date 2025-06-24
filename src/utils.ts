@@ -2,6 +2,8 @@ import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
 import { PR_EXPLAIN_MESSAGE } from "./constants.js";
 import { Config, octokit } from "./shared.js";
 
+const GITHUB_PR_BODY_LIMIT = 65536;
+
 export async function tryMerge(headBranch: string, baseBranch: string) {
   console.log(
     `Trying to merge ${headBranch} branch into ${baseBranch} branch.`,
@@ -107,3 +109,22 @@ export async function createExplainComment(pullRequestNumber: number) {
 
 export const removeHtmlComments = (text: string) =>
   text.replace(/<!--.*?-->/gs, "");
+
+/**
+ * GitHub has a limit of 65,536 characters for PR descriptions.
+ * This function truncates the description if it exceeds the limit
+ * and appends "..." to indicate truncation.
+ */
+export function truncatePrDescription(description: string): string {  
+  if (description.length <= GITHUB_PR_BODY_LIMIT) {
+    return description;
+  }
+  
+  console.log(
+    `PR description is ${description.length} characters, which exceeds GitHub's limit of ${GITHUB_PR_BODY_LIMIT}. Truncating to fit.`
+  );
+  
+  // Reserve 3 characters for the "..." suffix
+  const truncatedLength = GITHUB_PR_BODY_LIMIT - 3;
+  return description.substring(0, truncatedLength) + "...";
+}
