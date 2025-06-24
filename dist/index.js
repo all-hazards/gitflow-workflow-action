@@ -12,7 +12,7 @@ import require$$0$3 from 'util';
 import require$$0$6 from 'stream';
 import require$$7 from 'buffer';
 import require$$8 from 'querystring';
-import require$$13 from 'stream/web';
+import require$$14 from 'stream/web';
 import require$$0$8 from 'node:stream';
 import require$$1$2 from 'node:util';
 import require$$0$7 from 'node:events';
@@ -39,7 +39,11 @@ function getAugmentedNamespace(n) {
   var f = n.default;
 	if (typeof f == "function") {
 		var a = function a () {
-			if (this instanceof a) {
+			var isInstance = false;
+      try {
+        isInstance = this instanceof a;
+      } catch {}
+			if (isInstance) {
         return Reflect.construct(f, arguments, this.constructor);
 			}
 			return f.apply(this, arguments);
@@ -986,6 +990,132 @@ function requireErrors () {
 	return errors;
 }
 
+var constants$5;
+var hasRequiredConstants$5;
+
+function requireConstants$5 () {
+	if (hasRequiredConstants$5) return constants$5;
+	hasRequiredConstants$5 = 1;
+
+	/** @type {Record<string, string | undefined>} */
+	const headerNameLowerCasedRecord = {};
+
+	// https://developer.mozilla.org/docs/Web/HTTP/Headers
+	const wellknownHeaderNames = [
+	  'Accept',
+	  'Accept-Encoding',
+	  'Accept-Language',
+	  'Accept-Ranges',
+	  'Access-Control-Allow-Credentials',
+	  'Access-Control-Allow-Headers',
+	  'Access-Control-Allow-Methods',
+	  'Access-Control-Allow-Origin',
+	  'Access-Control-Expose-Headers',
+	  'Access-Control-Max-Age',
+	  'Access-Control-Request-Headers',
+	  'Access-Control-Request-Method',
+	  'Age',
+	  'Allow',
+	  'Alt-Svc',
+	  'Alt-Used',
+	  'Authorization',
+	  'Cache-Control',
+	  'Clear-Site-Data',
+	  'Connection',
+	  'Content-Disposition',
+	  'Content-Encoding',
+	  'Content-Language',
+	  'Content-Length',
+	  'Content-Location',
+	  'Content-Range',
+	  'Content-Security-Policy',
+	  'Content-Security-Policy-Report-Only',
+	  'Content-Type',
+	  'Cookie',
+	  'Cross-Origin-Embedder-Policy',
+	  'Cross-Origin-Opener-Policy',
+	  'Cross-Origin-Resource-Policy',
+	  'Date',
+	  'Device-Memory',
+	  'Downlink',
+	  'ECT',
+	  'ETag',
+	  'Expect',
+	  'Expect-CT',
+	  'Expires',
+	  'Forwarded',
+	  'From',
+	  'Host',
+	  'If-Match',
+	  'If-Modified-Since',
+	  'If-None-Match',
+	  'If-Range',
+	  'If-Unmodified-Since',
+	  'Keep-Alive',
+	  'Last-Modified',
+	  'Link',
+	  'Location',
+	  'Max-Forwards',
+	  'Origin',
+	  'Permissions-Policy',
+	  'Pragma',
+	  'Proxy-Authenticate',
+	  'Proxy-Authorization',
+	  'RTT',
+	  'Range',
+	  'Referer',
+	  'Referrer-Policy',
+	  'Refresh',
+	  'Retry-After',
+	  'Sec-WebSocket-Accept',
+	  'Sec-WebSocket-Extensions',
+	  'Sec-WebSocket-Key',
+	  'Sec-WebSocket-Protocol',
+	  'Sec-WebSocket-Version',
+	  'Server',
+	  'Server-Timing',
+	  'Service-Worker-Allowed',
+	  'Service-Worker-Navigation-Preload',
+	  'Set-Cookie',
+	  'SourceMap',
+	  'Strict-Transport-Security',
+	  'Supports-Loading-Mode',
+	  'TE',
+	  'Timing-Allow-Origin',
+	  'Trailer',
+	  'Transfer-Encoding',
+	  'Upgrade',
+	  'Upgrade-Insecure-Requests',
+	  'User-Agent',
+	  'Vary',
+	  'Via',
+	  'WWW-Authenticate',
+	  'X-Content-Type-Options',
+	  'X-DNS-Prefetch-Control',
+	  'X-Frame-Options',
+	  'X-Permitted-Cross-Domain-Policies',
+	  'X-Powered-By',
+	  'X-Requested-With',
+	  'X-XSS-Protection'
+	];
+
+	for (let i = 0; i < wellknownHeaderNames.length; ++i) {
+	  const key = wellknownHeaderNames[i];
+	  const lowerCasedKey = key.toLowerCase();
+	  headerNameLowerCasedRecord[key] = headerNameLowerCasedRecord[lowerCasedKey] =
+	    lowerCasedKey;
+	}
+
+	// Note: object prototypes should not be able to be referenced. e.g. `Object#hasOwnProperty`.
+	Object.setPrototypeOf(headerNameLowerCasedRecord, null);
+
+	constants$5 = {
+	  wellknownHeaderNames,
+	  headerNameLowerCasedRecord
+	};
+	return constants$5;
+}
+
 var util$6;
 var hasRequiredUtil$6;
 
@@ -1002,6 +1132,7 @@ function requireUtil$6 () {
 	const { Blob } = require$$7;
 	const nodeUtil = require$$0$3;
 	const { stringify } = require$$8;
+	const { headerNameLowerCasedRecord } = requireConstants$5();
 
 	const [nodeMajor, nodeMinor] = process.versions.node.split('.').map(v => Number(v));
 
@@ -1211,6 +1342,15 @@ function requireUtil$6 () {
 	  return m ? parseInt(m[1], 10) * 1000 : null
 	}
 
+	/**
+	 * Retrieves a header name and returns its lowercase value.
+	 * @param {string | Buffer} value Header name
+	 * @returns {string}
+	 */
+	function headerNameToString (value) {
+	  return headerNameLowerCasedRecord[value] || value.toLowerCase()
+	}
+
 	function parseHeaders (headers, obj = {}) {
 	  // For H2 support
 	  if (!Array.isArray(headers)) return headers
@@ -1361,7 +1501,7 @@ function requireUtil$6 () {
 	let ReadableStream;
 	function ReadableStreamFrom (iterable) {
 	  if (!ReadableStream) {
-	    ReadableStream = require$$13.ReadableStream;
+	    ReadableStream = require$$14.ReadableStream;
 	  }
 
 	  if (ReadableStream.from) {
@@ -1482,6 +1622,7 @@ function requireUtil$6 () {
 	  isIterable,
 	  isAsyncIterable,
 	  isDestroyed,
+	  headerNameToString,
 	  parseRawHeaders,
 	  parseHeaders,
 	  parseKeepAliveTimeout,
@@ -2086,7 +2227,7 @@ function requireDicer () {
 	  if (this._headerFirst && this._isPreamble) {
 	    if (!this._part) {
 	      this._part = new PartStream(this._partOpts);
-	      if (this._events.preamble) { this.emit('preamble', this._part); } else { this._ignore(); }
+	      if (this.listenerCount('preamble') !== 0) { this.emit('preamble', this._part); } else { this._ignore(); }
 	    }
 	    const r = this._hparser.push(data);
 	    if (!this._inHeader && r !== undefined && r < data.length) { data = data.slice(r); } else { return cb() }
@@ -2143,7 +2284,7 @@ function requireDicer () {
 	      }
 	    }
 	    if (this._dashes === 2) {
-	      if ((start + i) < end && this._events.trailer) { this.emit('trailer', data.slice(start + i, end)); }
+	      if ((start + i) < end && this.listenerCount('trailer') !== 0) { this.emit('trailer', data.slice(start + i, end)); }
 	      this.reset();
 	      this._finished = true;
 	      // no more parts will be added
@@ -2161,7 +2302,13 @@ function requireDicer () {
 	    this._part._read = function (n) {
 	      self._unpause();
 	    };
-	    if (this._isPreamble && this._events.preamble) { this.emit('preamble', this._part); } else if (this._isPreamble !== true && this._events.part) { this.emit('part', this._part); } else { this._ignore(); }
+	    if (this._isPreamble && this.listenerCount('preamble') !== 0) {
+	      this.emit('preamble', this._part);
+	    } else if (this._isPreamble !== true && this.listenerCount('part') !== 0) {
+	      this.emit('part', this._part);
+	    } else {
+	      this._ignore();
+	    }
 	    if (!this._isPreamble) { this._inHeader = true; }
 	  }
 	  if (data && start < end && !this._ignoreData) {
@@ -2319,7 +2466,7 @@ function requireDecodeText () {
 	    if (textDecoders.has(this.toString())) {
 	      try {
 	        return textDecoders.get(this).decode(data)
-	      } catch (e) { }
+	      } catch {}
 	    }
 	    return typeof data === 'string'
 	      ? data
@@ -2735,7 +2882,7 @@ function requireMultipart () {
 
 	        ++nfiles;
 
-	        if (!boy._events.file) {
+	        if (boy.listenerCount('file') === 0) {
 	          self.parser._ignore();
 	          return
 	        }
@@ -3452,14 +3599,18 @@ function requireUtil$5 () {
 	const assert = require$$0$4;
 	const { isUint8Array } = require$$5;
 
+	let supportedHashes = [];
+
 	// https://nodejs.org/api/crypto.html#determining-if-crypto-support-is-unavailable
 	/** @type {import('crypto')|undefined} */
 	let crypto;
 
 	try {
 	  crypto = require('crypto');
+	  const possibleRelevantHashes = ['sha256', 'sha384', 'sha512'];
+	  supportedHashes = crypto.getHashes().filter((hash) => possibleRelevantHashes.includes(hash));
+	/* c8 ignore next 3 */
 	} catch {
-
 	}
 
 	function responseURL (response) {
@@ -3986,66 +4137,56 @@ function requireUtil$5 () {
 	    return true
 	  }
 
-	  // 3. If parsedMetadata is the empty set, return true.
+	  // 3. If response is not eligible for integrity validation, return false.
+	  // TODO
+
+	  // 4. If parsedMetadata is the empty set, return true.
 	  if (parsedMetadata.length === 0) {
 	    return true
 	  }
 
-	  // 4. Let metadata be the result of getting the strongest
+	  // 5. Let metadata be the result of getting the strongest
 	  //    metadata from parsedMetadata.
-	  const list = parsedMetadata.sort((c, d) => d.algo.localeCompare(c.algo));
-	  // get the strongest algorithm
-	  const strongest = list[0].algo;
-	  // get all entries that use the strongest algorithm; ignore weaker
-	  const metadata = list.filter((item) => item.algo === strongest);
+	  const strongest = getStrongestMetadata(parsedMetadata);
+	  const metadata = filterMetadataListByAlgorithm(parsedMetadata, strongest);
 
-	  // 5. For each item in metadata:
+	  // 6. For each item in metadata:
 	  for (const item of metadata) {
 	    // 1. Let algorithm be the alg component of item.
 	    const algorithm = item.algo;
 
 	    // 2. Let expectedValue be the val component of item.
-	    let expectedValue = item.hash;
+	    const expectedValue = item.hash;
 
 	    // See https://github.com/web-platform-tests/wpt/commit/e4c5cc7a5e48093220528dfdd1c4012dc3837a0e
 	    // "be liberal with padding". This is annoying, and it's not even in the spec.
 
-	    if (expectedValue.endsWith('==')) {
-	      expectedValue = expectedValue.slice(0, -2);
-	    }
-
 	    // 3. Let actualValue be the result of applying algorithm to bytes.
 	    let actualValue = crypto.createHash(algorithm).update(bytes).digest('base64');
 
-	    if (actualValue.endsWith('==')) {
-	      actualValue = actualValue.slice(0, -2);
+	    if (actualValue[actualValue.length - 1] === '=') {
+	      if (actualValue[actualValue.length - 2] === '=') {
+	        actualValue = actualValue.slice(0, -2);
+	      } else {
+	        actualValue = actualValue.slice(0, -1);
+	      }
 	    }
 
 	    // 4. If actualValue is a case-sensitive match for expectedValue,
 	    //    return true.
-	    if (actualValue === expectedValue) {
-	      return true
-	    }
-
-	    let actualBase64URL = crypto.createHash(algorithm).update(bytes).digest('base64url');
-
-	    if (actualBase64URL.endsWith('==')) {
-	      actualBase64URL = actualBase64URL.slice(0, -2);
-	    }
-
-	    if (actualBase64URL === expectedValue) {
+	    if (compareBase64Mixed(actualValue, expectedValue)) {
 	      return true
 	    }
 	  }
 
-	  // 6. Return false.
+	  // 7. Return false.
 	  return false
 	}
 
 	// https://w3c.github.io/webappsec-subresource-integrity/#grammardef-hash-with-options
 	// https://www.w3.org/TR/CSP2/#source-list-syntax
 	// https://www.rfc-editor.org/rfc/rfc5234#appendix-B.1
-	const parseHashWithOptions = /((?<algo>sha256|sha384|sha512)-(?<hash>[A-z0-9+/]{1}.*={0,2}))( +[\x21-\x7e]?)?/i;
+	const parseHashWithOptions = /(?<algo>sha256|sha384|sha512)-((?<hash>[A-Za-z0-9+/]+|[A-Za-z0-9_-]+)={0,2}(?:\s|$)( +[!-~]*)?)?/i;
 
 	/**
 	 * @see https://w3c.github.io/webappsec-subresource-integrity/#parse-metadata
@@ -4059,8 +4200,6 @@ function requireUtil$5 () {
 	  // 2. Let empty be equal to true.
 	  let empty = true;
 
-	  const supportedHashes = crypto.getHashes();
-
 	  // 3. For each token returned by splitting metadata on spaces:
 	  for (const token of metadata.split(' ')) {
 	    // 1. Set empty to false.
@@ -4070,7 +4209,11 @@ function requireUtil$5 () {
 	    const parsedToken = parseHashWithOptions.exec(token);
 
 	    // 3. If token does not parse, continue to the next token.
-	    if (parsedToken === null || parsedToken.groups === undefined) {
+	    if (
+	      parsedToken === null ||
+	      parsedToken.groups === undefined ||
+	      parsedToken.groups.algo === undefined
+	    ) {
 	      // Note: Chromium blocks the request at this point, but Firefox
 	      // gives a warning that an invalid integrity was given. The
 	      // correct behavior is to ignore these, and subsequently not
@@ -4079,11 +4222,11 @@ function requireUtil$5 () {
 	    }
 
 	    // 4. Let algorithm be the hash-algo component of token.
-	    const algorithm = parsedToken.groups.algo;
+	    const algorithm = parsedToken.groups.algo.toLowerCase();
 
 	    // 5. If algorithm is a hash function recognized by the user
 	    //    agent, add the parsed token to result.
-	    if (supportedHashes.includes(algorithm.toLowerCase())) {
+	    if (supportedHashes.includes(algorithm)) {
 	      result.push(parsedToken.groups);
 	    }
 	  }
@@ -4094,6 +4237,82 @@ function requireUtil$5 () {
 	  }
 
 	  return result
+	}
+
+	/**
+	 * @param {{ algo: 'sha256' | 'sha384' | 'sha512' }[]} metadataList
+	 */
+	function getStrongestMetadata (metadataList) {
+	  // Let algorithm be the algo component of the first item in metadataList.
+	  // Can be sha256
+	  let algorithm = metadataList[0].algo;
+	  // If the algorithm is sha512, then it is the strongest
+	  // and we can return immediately
+	  if (algorithm[3] === '5') {
+	    return algorithm
+	  }
+
+	  for (let i = 1; i < metadataList.length; ++i) {
+	    const metadata = metadataList[i];
+	    // If the algorithm is sha512, then it is the strongest
+	    // and we can break the loop immediately
+	    if (metadata.algo[3] === '5') {
+	      algorithm = 'sha512';
+	      break
+	    // If the algorithm is sha384, then a potential sha256 or sha384 is ignored
+	    } else if (algorithm[3] === '3') {
+	      continue
+	    // algorithm is sha256, check if algorithm is sha384 and if so, set it as
+	    // the strongest
+	    } else if (metadata.algo[3] === '3') {
+	      algorithm = 'sha384';
+	    }
+	  }
+	  return algorithm
+	}
+
+	function filterMetadataListByAlgorithm (metadataList, algorithm) {
+	  if (metadataList.length === 1) {
+	    return metadataList
+	  }
+
+	  let pos = 0;
+	  for (let i = 0; i < metadataList.length; ++i) {
+	    if (metadataList[i].algo === algorithm) {
+	      metadataList[pos++] = metadataList[i];
+	    }
+	  }
+
+	  metadataList.length = pos;
+
+	  return metadataList
+	}
+
+	/**
+	 * Compares two base64 strings, allowing for base64url
+	 * in the second string.
+	 *
+	* @param {string} actualValue always base64
+	 * @param {string} expectedValue base64 or base64url
+	 * @returns {boolean}
+	 */
+	function compareBase64Mixed (actualValue, expectedValue) {
+	  if (actualValue.length !== expectedValue.length) {
+	    return false
+	  }
+	  for (let i = 0; i < actualValue.length; ++i) {
+	    if (actualValue[i] !== expectedValue[i]) {
+	      if (
+	        (actualValue[i] === '+' && expectedValue[i] === '-') ||
+	        (actualValue[i] === '/' && expectedValue[i] === '_')
+	      ) {
+	        continue
+	      }
+	      return false
+	    }
+	  }
+
+	  return true
 	}
 
 	// https://w3c.github.io/webappsec-upgrade-insecure-requests/#upgrade-request
@@ -4339,7 +4558,7 @@ function requireUtil$5 () {
 
 	function isReadableStreamLike (stream) {
 	  if (!ReadableStream) {
-	    ReadableStream = require$$13.ReadableStream;
+	    ReadableStream = require$$14.ReadableStream;
 	  }
 
 	  return stream instanceof ReadableStream || (
@@ -4511,7 +4730,8 @@ function requireUtil$5 () {
 	  urlHasHttpsScheme,
 	  urlIsHttpHttpsScheme,
 	  readAllBytes,
-	  normalizeMethodRecord
+	  normalizeMethodRecord,
+	  parseMetadata
 	};
 	return util$5;
 }
@@ -6478,6 +6698,14 @@ function requireBody () {
 	const { File: UndiciFile } = requireFile();
 	const { parseMIMEType, serializeAMimeType } = requireDataURL();
 
+	let random;
+	try {
+	  const crypto = require('node:crypto');
+	  random = (max) => crypto.randomInt(0, max);
+	} catch {
+	  random = (max) => Math.floor(Math.random(max));
+	}
+
 	let ReadableStream = globalThis.ReadableStream;
 
 	/** @type {globalThis['File']} */
@@ -6488,7 +6716,7 @@ function requireBody () {
 	// https://fetch.spec.whatwg.org/#concept-bodyinit-extract
 	function extractBody (object, keepalive = false) {
 	  if (!ReadableStream) {
-	    ReadableStream = require$$13.ReadableStream;
+	    ReadableStream = require$$14.ReadableStream;
 	  }
 
 	  // 1. Let stream be null.
@@ -6563,7 +6791,7 @@ function requireBody () {
 	    // Set source to a copy of the bytes held by object.
 	    source = new Uint8Array(object.buffer.slice(object.byteOffset, object.byteOffset + object.byteLength));
 	  } else if (util.isFormDataLike(object)) {
-	    const boundary = `----formdata-undici-0${`${Math.floor(Math.random() * 1e11)}`.padStart(11, '0')}`;
+	    const boundary = `----formdata-undici-0${`${random(1e11)}`.padStart(11, '0')}`;
 	    const prefix = `--${boundary}\r\nContent-Disposition: form-data`;
 
 	    /*! formdata-polyfill. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> */
@@ -6709,7 +6937,7 @@ function requireBody () {
 	function safelyExtractBody (object, keepalive = false) {
 	  if (!ReadableStream) {
 	    // istanbul ignore next
-	    ReadableStream = require$$13.ReadableStream;
+	    ReadableStream = require$$14.ReadableStream;
 	  }
 
 	  // To safely extract a body and a `Content-Type` value from
@@ -8473,12 +8701,17 @@ function requireRedirectHandler () {
 
 	// https://tools.ietf.org/html/rfc7231#section-6.4.4
 	function shouldRemoveHeader (header, removeContent, unknownOrigin) {
-	  return (
-	    (header.length === 4 && header.toString().toLowerCase() === 'host') ||
-	    (removeContent && header.toString().toLowerCase().indexOf('content-') === 0) ||
-	    (unknownOrigin && header.length === 13 && header.toString().toLowerCase() === 'authorization') ||
-	    (unknownOrigin && header.length === 6 && header.toString().toLowerCase() === 'cookie')
-	  )
+	  if (header.length === 4) {
+	    return util.headerNameToString(header) === 'host'
+	  }
+	  if (removeContent && util.headerNameToString(header).startsWith('content-')) {
+	    return true
+	  }
+	  if (unknownOrigin && (header.length === 13 || header.length === 6 || header.length === 19)) {
+	    const name = util.headerNameToString(header);
+	    return name === 'authorization' || name === 'cookie' || name === 'proxy-authorization'
+	  }
+	  return false
 	}
 
 	// https://tools.ietf.org/html/rfc7231#section-6.4
@@ -11292,6 +11525,20 @@ function requirePool () {
 	      ? { ...options.interceptors }
 	      : undefined;
 	    this[kFactory] = factory;
+
+	    this.on('connectionError', (origin, targets, error) => {
+	      // If a connection error occurs, we remove the client from the pool,
+	      // and emit a connectionError event. They will not be re-used.
+	      // Fixes https://github.com/nodejs/undici/issues/3895
+	      for (const target of targets) {
+	        // Do not use kRemoveClient here, as it will close the client,
+	        // but the client cannot be closed in this state.
+	        const idx = this[kClients].indexOf(target);
+	        if (idx !== -1) {
+	          this[kClients].splice(idx, 1);
+	        }
+	      }
+	    });
 	  }
 
 	  [kGetDispatcher] () {
@@ -14753,6 +15000,7 @@ function requireHeaders () {
 	  isValidHeaderName,
 	  isValidHeaderValue
 	} = requireUtil$5();
+	const util = require$$0$3;
 	const { webidl } = requireWebidl();
 	const assert = require$$0$4;
 
@@ -15299,6 +15547,9 @@ function requireHeaders () {
 	  [Symbol.toStringTag]: {
 	    value: 'Headers',
 	    configurable: true
+	  },
+	  [util.inspect.custom]: {
+	    enumerable: false
 	  }
 	});
 
@@ -15360,7 +15611,7 @@ function requireResponse () {
 	const assert = require$$0$4;
 	const { types } = require$$0$3;
 
-	const ReadableStream = globalThis.ReadableStream || require$$13.ReadableStream;
+	const ReadableStream = globalThis.ReadableStream || require$$14.ReadableStream;
 	const textEncoder = new TextEncoder('utf-8');
 
 	// https://fetch.spec.whatwg.org/#response-class
@@ -16429,7 +16680,7 @@ function requireRequest () {
 
 	      // 2. Set finalBody to the result of creating a proxy for inputBody.
 	      if (!TransformStream) {
-	        TransformStream = require$$13.TransformStream;
+	        TransformStream = require$$14.TransformStream;
 	      }
 
 	      // https://streams.spec.whatwg.org/#readablestream-create-a-proxy
@@ -16922,7 +17173,7 @@ function requireFetch () {
 	const { Readable, pipeline } = require$$0$6;
 	const { addAbortListener, isErrored, isReadable, nodeMajor, nodeMinor } = requireUtil$6();
 	const { dataURLProcessor, serializeAMimeType } = requireDataURL();
-	const { TransformStream } = require$$13;
+	const { TransformStream } = require$$14;
 	const { getGlobalDispatcher } = requireGlobal();
 	const { webidl } = requireWebidl();
 	const { STATUS_CODES } = require$$2$1;
@@ -18050,6 +18301,9 @@ function requireFetch () {
 	    // https://fetch.spec.whatwg.org/#cors-non-wildcard-request-header-name
 	    request.headersList.delete('authorization');
 
+	    // https://fetch.spec.whatwg.org/#authentication-entries
+	    request.headersList.delete('proxy-authorization', true);
+
 	    // "Cookie" and "Host" are forbidden request-headers, which undici doesn't implement.
 	    request.headersList.delete('cookie');
 	    request.headersList.delete('host');
@@ -18589,7 +18843,7 @@ function requireFetch () {
 	  // cancelAlgorithm set to cancelAlgorithm, highWaterMark set to
 	  // highWaterMark, and sizeAlgorithm set to sizeAlgorithm.
 	  if (!ReadableStream) {
-	    ReadableStream = require$$13.ReadableStream;
+	    ReadableStream = require$$14.ReadableStream;
 	  }
 
 	  const stream = new ReadableStream(
@@ -21185,9 +21439,10 @@ function requireUtil$1 () {
 	if (hasRequiredUtil$1) return util$1;
 	hasRequiredUtil$1 = 1;
 
-	const assert = require$$0$4;
-	const { kHeadersList } = requireSymbols$4();
-
+	/**
+	 * @param {string} value
+	 * @returns {boolean}
+	 */
 	function isCTLExcludingHtab (value) {
 	  if (value.length === 0) {
 	    return false
@@ -21448,31 +21703,13 @@ function requireUtil$1 () {
 	  return out.join('; ')
 	}
 
-	let kHeadersListNode;
-
-	function getHeadersList (headers) {
-	  if (headers[kHeadersList]) {
-	    return headers[kHeadersList]
-	  }
-
-	  if (!kHeadersListNode) {
-	    kHeadersListNode = Object.getOwnPropertySymbols(headers).find(
-	      (symbol) => symbol.description === 'headers list'
-	    );
-
-	    assert(kHeadersListNode, 'Headers cannot be parsed');
-	  }
-
-	  const headersList = headers[kHeadersListNode];
-	  assert(headersList);
-
-	  return headersList
-	}
-
 	util$1 = {
 	  isCTLExcludingHtab,
-	  stringify,
-	  getHeadersList
+	  validateCookieName,
+	  validateCookiePath,
+	  validateCookieValue,
+	  toIMFDate,
+	  stringify
 	};
 	return util$1;
 }
@@ -21810,7 +22047,7 @@ function requireCookies () {
 	hasRequiredCookies = 1;
 
 	const { parseSetCookie } = requireParse$1();
-	const { stringify, getHeadersList } = requireUtil$1();
+	const { stringify } = requireUtil$1();
 	const { webidl } = requireWebidl();
 	const { Headers } = requireHeaders();
 
@@ -21886,14 +22123,13 @@ function requireCookies () {
 
 	  webidl.brandCheck(headers, Headers, { strict: false });
 
-	  const cookies = getHeadersList(headers).cookies;
+	  const cookies = headers.getSetCookie();
 
 	  if (!cookies) {
 	    return []
 	  }
 
-	  // In older versions of undici, cookies is a list of name:value.
-	  return cookies.map((pair) => parseSetCookie(Array.isArray(pair) ? pair[1] : pair))
+	  return cookies.map((pair) => parseSetCookie(pair))
 	}
 
 	/**
@@ -27079,6 +27315,7 @@ function requireContext () {
 	        this.action = process.env.GITHUB_ACTION;
 	        this.actor = process.env.GITHUB_ACTOR;
 	        this.job = process.env.GITHUB_JOB;
+	        this.runAttempt = parseInt(process.env.GITHUB_RUN_ATTEMPT, 10);
 	        this.runNumber = parseInt(process.env.GITHUB_RUN_NUMBER, 10);
 	        this.runId = parseInt(process.env.GITHUB_RUN_ID, 10);
 	        this.apiUrl = (_a = process.env.GITHUB_API_URL) !== null && _a !== void 0 ? _a : `https://api.github.com`;
@@ -27392,7 +27629,7 @@ function requireBeforeAfterHook () {
 
 var beforeAfterHookExports = requireBeforeAfterHook();
 
-const VERSION$5 = "9.0.4";
+const VERSION$5 = "9.0.6";
 
 const userAgent = `octokit-endpoint.js/${VERSION$5} ${getUserAgent()}`;
 const DEFAULTS = {
@@ -27489,9 +27726,9 @@ function addQueryParameters(url, parameters) {
   }).join("&");
 }
 
-const urlVariableRegex = /\{[^}]+\}/g;
+const urlVariableRegex = /\{[^{}}]+\}/g;
 function removeNonChars(variableName) {
-  return variableName.replace(/^\W+|\W+$/g, "").split(/,/);
+  return variableName.replace(/(?:^\W+)|(?:(?<!\W)\W+$)/g, "").split(/,/);
 }
 function extractUrlVariableNames(url) {
   const matches = url.match(urlVariableRegex);
@@ -27674,7 +27911,7 @@ function parse(options) {
     }
     if (url.endsWith("/graphql")) {
       if (options.mediaType.previews?.length) {
-        const previewsFromAcceptHeader = headers.accept.match(/[\w-]+(?=-preview)/g) || [];
+        const previewsFromAcceptHeader = headers.accept.match(/(?<![\w-])[\w-]+(?=-preview)/g) || [];
         headers.accept = previewsFromAcceptHeader.concat(options.mediaType.previews).map((preview) => {
           const format = options.mediaType.format ? `.${options.mediaType.format}` : "+json";
           return `application/vnd.github.${preview}-preview${format}`;
@@ -27723,7 +27960,7 @@ function withDefaults$2(oldDefaults, newDefaults) {
 
 const endpoint = withDefaults$2(null, DEFAULTS);
 
-const VERSION$4 = "8.1.6";
+const VERSION$4 = "8.4.1";
 
 function isPlainObject(value) {
   if (typeof value !== "object" || value === null)
@@ -27871,7 +28108,7 @@ class RequestError extends Error {
     if (options.request.headers.authorization) {
       requestCopy.headers = Object.assign({}, options.request.headers, {
         authorization: options.request.headers.authorization.replace(
-          / .*$/,
+          /(?<! ) .*$/,
           " [REDACTED]"
         )
       });
@@ -27926,6 +28163,7 @@ function fetchWrapper(requestOptions) {
   return fetch(requestOptions.url, {
     method: requestOptions.method,
     body: requestOptions.body,
+    redirect: requestOptions.request?.redirect,
     headers: requestOptions.headers,
     signal: requestOptions.request?.signal,
     // duplex must be set if request.body is ReadableStream or Async Iterables.
@@ -27938,7 +28176,7 @@ function fetchWrapper(requestOptions) {
       headers[keyAndValue[0]] = keyAndValue[1];
     }
     if ("deprecation" in headers) {
-      const matches = headers.link && headers.link.match(/<([^>]+)>; rel="deprecation"/);
+      const matches = headers.link && headers.link.match(/<([^<>]+)>; rel="deprecation"/);
       const deprecationLink = matches && matches.pop();
       log.warn(
         `[@octokit/request] "${requestOptions.method} ${requestOptions.url}" is deprecated. It is scheduled to be removed on ${headers.sunset}${deprecationLink ? `. See ${deprecationLink}` : ""}`
@@ -28024,11 +28262,17 @@ async function getResponseData(response) {
 function toErrorMessage(data) {
   if (typeof data === "string")
     return data;
+  let suffix;
+  if ("documentation_url" in data) {
+    suffix = ` - ${data.documentation_url}`;
+  } else {
+    suffix = "";
+  }
   if ("message" in data) {
     if (Array.isArray(data.errors)) {
-      return `${data.message}: ${data.errors.map(JSON.stringify).join(", ")}`;
+      return `${data.message}: ${data.errors.map(JSON.stringify).join(", ")}${suffix}`;
     }
-    return data.message;
+    return `${data.message}${suffix}`;
   }
   return `Unknown error: ${JSON.stringify(data)}`;
 }
@@ -28066,7 +28310,7 @@ const request = withDefaults$1(endpoint, {
 // pkg/dist-src/index.js
 
 // pkg/dist-src/version.js
-var VERSION$3 = "7.0.2";
+var VERSION$3 = "7.1.1";
 
 // pkg/dist-src/error.js
 function _buildMessageForResponseErrors(data) {
@@ -28108,8 +28352,7 @@ function graphql(request2, query, options) {
       );
     }
     for (const key in options) {
-      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key))
-        continue;
+      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key)) continue;
       return Promise.reject(
         new Error(
           `[@octokit/graphql] "${key}" cannot be used as variable name`
@@ -28227,7 +28470,7 @@ const createTokenAuth = function createTokenAuth2(token) {
 // pkg/dist-src/index.js
 
 // pkg/dist-src/version.js
-var VERSION$2 = "5.0.2";
+var VERSION$2 = "5.2.1";
 
 // pkg/dist-src/index.js
 var noop = () => {
@@ -28362,7 +28605,7 @@ var distWeb$1 = /*#__PURE__*/Object.freeze({
 
 var require$$2 = /*@__PURE__*/getAugmentedNamespace(distWeb$1);
 
-const VERSION$1 = "10.2.0";
+const VERSION$1 = "10.4.1";
 
 const Endpoints = {
   actions: {
@@ -28488,6 +28731,9 @@ const Endpoints = {
       "GET /repos/{owner}/{repo}/actions/permissions/selected-actions"
     ],
     getArtifact: ["GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"],
+    getCustomOidcSubClaimForRepo: [
+      "GET /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
     getEnvironmentPublicKey: [
       "GET /repositories/{repository_id}/environments/{environment_name}/secrets/public-key"
     ],
@@ -28640,6 +28886,9 @@ const Endpoints = {
     setCustomLabelsForSelfHostedRunnerForRepo: [
       "PUT /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
     ],
+    setCustomOidcSubClaimForRepo: [
+      "PUT /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
     setGithubActionsDefaultWorkflowPermissionsOrganization: [
       "PUT /orgs/{org}/actions/permissions/workflow"
     ],
@@ -28709,6 +28958,7 @@ const Endpoints = {
     listWatchersForRepo: ["GET /repos/{owner}/{repo}/subscribers"],
     markNotificationsAsRead: ["PUT /notifications"],
     markRepoNotificationsAsRead: ["PUT /repos/{owner}/{repo}/notifications"],
+    markThreadAsDone: ["DELETE /notifications/threads/{thread_id}"],
     markThreadAsRead: ["PATCH /notifications/threads/{thread_id}"],
     setRepoSubscription: ["PUT /repos/{owner}/{repo}/subscription"],
     setThreadSubscription: [
@@ -28985,10 +29235,10 @@ const Endpoints = {
     updateForAuthenticatedUser: ["PATCH /user/codespaces/{codespace_name}"]
   },
   copilot: {
-    addCopilotForBusinessSeatsForTeams: [
+    addCopilotSeatsForTeams: [
       "POST /orgs/{org}/copilot/billing/selected_teams"
     ],
-    addCopilotForBusinessSeatsForUsers: [
+    addCopilotSeatsForUsers: [
       "POST /orgs/{org}/copilot/billing/selected_users"
     ],
     cancelCopilotSeatAssignmentForTeams: [
@@ -29301,9 +29551,23 @@ const Endpoints = {
       }
     ]
   },
+  oidc: {
+    getOidcCustomSubTemplateForOrg: [
+      "GET /orgs/{org}/actions/oidc/customization/sub"
+    ],
+    updateOidcCustomSubTemplateForOrg: [
+      "PUT /orgs/{org}/actions/oidc/customization/sub"
+    ]
+  },
   orgs: {
     addSecurityManagerTeam: [
       "PUT /orgs/{org}/security-managers/teams/{team_slug}"
+    ],
+    assignTeamToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    assignUserToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/users/{username}/{role_id}"
     ],
     blockUser: ["PUT /orgs/{org}/blocks/{username}"],
     cancelInvitation: ["DELETE /orgs/{org}/invitations/{invitation_id}"],
@@ -29313,6 +29577,7 @@ const Endpoints = {
     convertMemberToOutsideCollaborator: [
       "PUT /orgs/{org}/outside_collaborators/{username}"
     ],
+    createCustomOrganizationRole: ["POST /orgs/{org}/organization-roles"],
     createInvitation: ["POST /orgs/{org}/invitations"],
     createOrUpdateCustomProperties: ["PATCH /orgs/{org}/properties/schema"],
     createOrUpdateCustomPropertiesValuesForRepos: [
@@ -29323,6 +29588,9 @@ const Endpoints = {
     ],
     createWebhook: ["POST /orgs/{org}/hooks"],
     delete: ["DELETE /orgs/{org}"],
+    deleteCustomOrganizationRole: [
+      "DELETE /orgs/{org}/organization-roles/{role_id}"
+    ],
     deleteWebhook: ["DELETE /orgs/{org}/hooks/{hook_id}"],
     enableOrDisableSecurityProductOnAllOrgRepos: [
       "POST /orgs/{org}/{security_product}/{enablement}"
@@ -29334,6 +29602,7 @@ const Endpoints = {
     ],
     getMembershipForAuthenticatedUser: ["GET /user/memberships/orgs/{org}"],
     getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
+    getOrgRole: ["GET /orgs/{org}/organization-roles/{role_id}"],
     getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
     getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
     getWebhookDelivery: [
@@ -29349,6 +29618,12 @@ const Endpoints = {
     listInvitationTeams: ["GET /orgs/{org}/invitations/{invitation_id}/teams"],
     listMembers: ["GET /orgs/{org}/members"],
     listMembershipsForAuthenticatedUser: ["GET /user/memberships/orgs"],
+    listOrgRoleTeams: ["GET /orgs/{org}/organization-roles/{role_id}/teams"],
+    listOrgRoleUsers: ["GET /orgs/{org}/organization-roles/{role_id}/users"],
+    listOrgRoles: ["GET /orgs/{org}/organization-roles"],
+    listOrganizationFineGrainedPermissions: [
+      "GET /orgs/{org}/organization-fine-grained-permissions"
+    ],
     listOutsideCollaborators: ["GET /orgs/{org}/outside_collaborators"],
     listPatGrantRepositories: [
       "GET /orgs/{org}/personal-access-tokens/{pat_id}/repositories"
@@ -29363,6 +29638,9 @@ const Endpoints = {
     listSecurityManagerTeams: ["GET /orgs/{org}/security-managers"],
     listWebhookDeliveries: ["GET /orgs/{org}/hooks/{hook_id}/deliveries"],
     listWebhooks: ["GET /orgs/{org}/hooks"],
+    patchCustomOrganizationRole: [
+      "PATCH /orgs/{org}/organization-roles/{role_id}"
+    ],
     pingWebhook: ["POST /orgs/{org}/hooks/{hook_id}/pings"],
     redeliverWebhookDelivery: [
       "POST /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"
@@ -29386,6 +29664,18 @@ const Endpoints = {
     ],
     reviewPatGrantRequestsInBulk: [
       "POST /orgs/{org}/personal-access-token-requests"
+    ],
+    revokeAllOrgRolesTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}"
+    ],
+    revokeAllOrgRolesUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}"
+    ],
+    revokeOrgRoleTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    revokeOrgRoleUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}/{role_id}"
     ],
     setMembershipForUser: ["PUT /orgs/{org}/memberships/{username}"],
     setPublicMembershipForAuthenticatedUser: [
@@ -29677,6 +29967,9 @@ const Endpoints = {
       {},
       { mapToData: "users" }
     ],
+    cancelPagesDeployment: [
+      "POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel"
+    ],
     checkAutomatedSecurityFixes: [
       "GET /repos/{owner}/{repo}/automated-security-fixes"
     ],
@@ -29712,12 +30005,15 @@ const Endpoints = {
     createForAuthenticatedUser: ["POST /user/repos"],
     createFork: ["POST /repos/{owner}/{repo}/forks"],
     createInOrg: ["POST /orgs/{org}/repos"],
+    createOrUpdateCustomPropertiesValues: [
+      "PATCH /repos/{owner}/{repo}/properties/values"
+    ],
     createOrUpdateEnvironment: [
       "PUT /repos/{owner}/{repo}/environments/{environment_name}"
     ],
     createOrUpdateFileContents: ["PUT /repos/{owner}/{repo}/contents/{path}"],
     createOrgRuleset: ["POST /orgs/{org}/rulesets"],
-    createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployment"],
+    createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployments"],
     createPagesSite: ["POST /repos/{owner}/{repo}/pages"],
     createRelease: ["POST /repos/{owner}/{repo}/releases"],
     createRepoRuleset: ["POST /repos/{owner}/{repo}/rulesets"],
@@ -29870,6 +30166,9 @@ const Endpoints = {
     getOrgRulesets: ["GET /orgs/{org}/rulesets"],
     getPages: ["GET /repos/{owner}/{repo}/pages"],
     getPagesBuild: ["GET /repos/{owner}/{repo}/pages/builds/{build_id}"],
+    getPagesDeployment: [
+      "GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}"
+    ],
     getPagesHealthCheck: ["GET /repos/{owner}/{repo}/pages/health"],
     getParticipationStats: ["GET /repos/{owner}/{repo}/stats/participation"],
     getPullRequestReviewProtection: [
@@ -30080,6 +30379,9 @@ const Endpoints = {
     ]
   },
   securityAdvisories: {
+    createFork: [
+      "POST /repos/{owner}/{repo}/security-advisories/{ghsa_id}/forks"
+    ],
     createPrivateVulnerabilityReport: [
       "POST /repos/{owner}/{repo}/security-advisories/reports"
     ],
@@ -30442,7 +30744,7 @@ var distSrc = /*#__PURE__*/Object.freeze({
 var require$$3 = /*@__PURE__*/getAugmentedNamespace(distSrc);
 
 // pkg/dist-src/version.js
-var VERSION = "9.1.5";
+var VERSION = "9.2.2";
 
 // pkg/dist-src/normalize-paginated-list-response.js
 function normalizePaginatedListResponse(response) {
@@ -30490,7 +30792,7 @@ function iterator(octokit, route, parameters) {
           const response = await requestMethod({ method, url, headers });
           const normalizedResponse = normalizePaginatedListResponse(response);
           url = ((normalizedResponse.headers.link || "").match(
-            /<([^>]+)>;\s*rel="next"/
+            /<([^<>]+)>;\s*rel="next"/
           ) || [])[1];
           return { value: normalizedResponse };
         } catch (error) {
@@ -30603,6 +30905,8 @@ var paginatingEndpoints = [
   "GET /orgs/{org}/members/{username}/codespaces",
   "GET /orgs/{org}/migrations",
   "GET /orgs/{org}/migrations/{migration_id}/repositories",
+  "GET /orgs/{org}/organization-roles/{role_id}/teams",
+  "GET /orgs/{org}/organization-roles/{role_id}/users",
   "GET /orgs/{org}/outside_collaborators",
   "GET /orgs/{org}/packages",
   "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
@@ -48372,11 +48676,11 @@ function requireSlackify () {
 
 	const escapeSpecials = text => {
 	  const escaped = text
-	    .replace('&', '&amp;')
-	    .replace(/<([^@]|$)/g, (_, m) => `&lt;${m}`)
+	    .replace(/&/g, '&amp;')
+	    .replace(/<([^@#]|$)/g, (_, m) => `&lt;${m}`)
 	    .replace(/^(.*)>/g, (_, m) => {
-	      const isEndOfUserMention = Boolean(m.match(/<@[A-Z0-9]+$/));
-	      if (isEndOfUserMention) {
+	      const isEndOfMention = Boolean(m.match(/<[@#][A-Z0-9]+$/));
+	      if (isEndOfMention) {
 	        return `${m}>`;
 	      }
 	      return `${m}&gt;`;
@@ -48599,6 +48903,7 @@ const Config = {
 const PR_EXPLAIN_MESSAGE = `Merging this pull request will trigger Gitflow release actions. A release would be created and ${Config.mergeBackFromProd ? `${Config.prodBranch}` : "this branch"} would be merged back to ${Config.developBranch} if needed.
 See [Gitflow Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) for more details.`;
 
+const GITHUB_PR_BODY_LIMIT = 65000;
 async function tryMerge(headBranch, baseBranch) {
     console.log(`Trying to merge ${headBranch} branch into ${baseBranch} branch.`);
     let compareCommitsResult;
@@ -48677,6 +48982,20 @@ async function createExplainComment(pullRequestNumber) {
     });
 }
 const removeHtmlComments = (text) => text.replace(/<!--.*?-->/gs, "");
+/**
+ * GitHub has a limit of 65,536 characters for PR descriptions.
+ * This function truncates the description if it exceeds the limit
+ * and appends "..." to indicate truncation.
+ */
+function truncatePrDescription(description) {
+    if (description.length <= GITHUB_PR_BODY_LIMIT) {
+        return description;
+    }
+    console.log(`PR description is ${description.length} characters, which exceeds GitHub's limit of ${GITHUB_PR_BODY_LIMIT}. Truncating to fit.`);
+    // Reserve 3 characters for the "..." suffix
+    const truncatedLength = GITHUB_PR_BODY_LIMIT - 3;
+    return description.substring(0, truncatedLength) + "...";
+}
 
 async function sendToSlack(slackOpts, release) {
     console.log(`integration(slack): Posting to slack channel #${slackOpts.channel}`);
@@ -48809,6 +49128,7 @@ var hasRequiredDebug;
 function requireDebug () {
 	if (hasRequiredDebug) return debug_1;
 	hasRequiredDebug = 1;
+
 	const debug = (
 	  typeof process === 'object' &&
 	  process.env &&
@@ -48827,6 +49147,7 @@ var hasRequiredConstants;
 function requireConstants () {
 	if (hasRequiredConstants) return constants;
 	hasRequiredConstants = 1;
+
 	// Note: this is the semver.org version of the spec that it implements
 	// Not necessarily the package version of this code.
 	const SEMVER_SPEC_VERSION = '2.0.0';
@@ -48873,6 +49194,7 @@ function requireRe () {
 	if (hasRequiredRe) return re.exports;
 	hasRequiredRe = 1;
 	(function (module, exports) {
+
 		const {
 		  MAX_SAFE_COMPONENT_LENGTH,
 		  MAX_SAFE_BUILD_LENGTH,
@@ -48951,12 +49273,14 @@ function requireRe () {
 
 		// ## Pre-release Version Identifier
 		// A numeric identifier, or a non-numeric identifier.
+		// Non-numberic identifiers include numberic identifiers but can be longer.
+		// Therefore non-numberic identifiers must go first.
 
-		createToken('PRERELEASEIDENTIFIER', `(?:${src[t.NUMERICIDENTIFIER]
-		}|${src[t.NONNUMERICIDENTIFIER]})`);
+		createToken('PRERELEASEIDENTIFIER', `(?:${src[t.NONNUMERICIDENTIFIER]
+		}|${src[t.NUMERICIDENTIFIER]})`);
 
-		createToken('PRERELEASEIDENTIFIERLOOSE', `(?:${src[t.NUMERICIDENTIFIERLOOSE]
-		}|${src[t.NONNUMERICIDENTIFIER]})`);
+		createToken('PRERELEASEIDENTIFIERLOOSE', `(?:${src[t.NONNUMERICIDENTIFIER]
+		}|${src[t.NUMERICIDENTIFIERLOOSE]})`);
 
 		// ## Pre-release Version
 		// Hyphen, followed by one or more dot-separated pre-release version
@@ -49102,6 +49426,7 @@ var hasRequiredParseOptions;
 function requireParseOptions () {
 	if (hasRequiredParseOptions) return parseOptions_1;
 	hasRequiredParseOptions = 1;
+
 	// parse out just the options we care about
 	const looseOption = Object.freeze({ loose: true });
 	const emptyOpts = Object.freeze({ });
@@ -49126,6 +49451,7 @@ var hasRequiredIdentifiers;
 function requireIdentifiers () {
 	if (hasRequiredIdentifiers) return identifiers;
 	hasRequiredIdentifiers = 1;
+
 	const numeric = /^[0-9]+$/;
 	const compareIdentifiers = (a, b) => {
 	  const anum = numeric.test(a);
@@ -49158,9 +49484,10 @@ var hasRequiredSemver;
 function requireSemver () {
 	if (hasRequiredSemver) return semver;
 	hasRequiredSemver = 1;
+
 	const debug = requireDebug();
 	const { MAX_LENGTH, MAX_SAFE_INTEGER } = requireConstants();
-	const { safeRe: re, safeSrc: src, t } = requireRe();
+	const { safeRe: re, t } = requireRe();
 
 	const parseOptions = requireParseOptions();
 	const { compareIdentifiers } = requireIdentifiers();
@@ -49342,8 +49669,7 @@ function requireSemver () {
 	      }
 	      // Avoid an invalid semver results
 	      if (identifier) {
-	        const r = new RegExp(`^${this.options.loose ? src[t.PRERELEASELOOSE] : src[t.PRERELEASE]}$`);
-	        const match = `-${identifier}`.match(r);
+	        const match = `-${identifier}`.match(this.options.loose ? re[t.PRERELEASELOOSE] : re[t.PRERELEASE]);
 	        if (!match || match[1] !== identifier) {
 	          throw new Error(`invalid identifier: ${identifier}`)
 	        }
@@ -49485,6 +49811,7 @@ var hasRequiredInc;
 function requireInc () {
 	if (hasRequiredInc) return inc_1;
 	hasRequiredInc = 1;
+
 	const SemVer = requireSemver();
 
 	const inc = (version, release, options, identifier, identifierBase) => {
@@ -49550,6 +49877,8 @@ async function createReleasePR() {
 
 ${Config.releaseSummary}
   `;
+    // Truncate the PR body if it exceeds GitHub's character limit
+    const truncatedReleasePrBody = truncatePrDescription(releasePrBody);
     const releaseBranch = `${Config.releaseBranchPrefix}${version}`;
     let pull_number;
     if (!isDryRun) {
@@ -49564,7 +49893,7 @@ ${Config.releaseSummary}
         const { data: pullRequest } = await octokit.rest.pulls.create({
             ...Config.repo,
             title: `Release ${releaseNotes.name || version}`,
-            body: releasePrBody,
+            body: truncatedReleasePrBody,
             head: releaseBranch,
             base: Config.prodBranch,
             maintainer_can_modify: false,
@@ -49579,7 +49908,7 @@ ${Config.releaseSummary}
         console.log(`create_release: Pull request has been created at ${pullRequest.html_url}`);
     }
     else {
-        console.log(`create_release: Dry run: would have created release branch ${releaseBranch} and PR with body:\n${releasePrBody}`);
+        console.log(`create_release: Dry run: would have created release branch ${releaseBranch} and PR with body:\n${truncatedReleasePrBody}`);
     }
     // Parse the PR body for PR numbers
     let mergedPrNumbers = (releaseNotes.body.match(/pull\/\d+/g) || []).map((prNumber) => Number(prNumber.replace("pull/", "")));
