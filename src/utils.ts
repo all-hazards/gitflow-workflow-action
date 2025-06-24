@@ -2,7 +2,7 @@ import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods";
 import { PR_EXPLAIN_MESSAGE } from "./constants.js";
 import { Config, octokit } from "./shared.js";
 
-const GITHUB_PR_BODY_LIMIT = 65000;
+const GITHUB_PR_BODY_LIMIT = 65536;
 
 export async function tryMerge(headBranch: string, baseBranch: string) {
   console.log(
