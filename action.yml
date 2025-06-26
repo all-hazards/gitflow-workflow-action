@@ -2,6 +2,10 @@ name: "Gitflow Workflow Action"
 description: "Create PR for release + Create GH release and send Slack message on merge"
 
 inputs:
+  release_type:
+    description: The type of release to create - either "release" or "hotfix"
+    required: false
+    default: "release"
   version:
     description: The version to be released
     required: false

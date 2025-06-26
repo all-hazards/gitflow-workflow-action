@@ -12,10 +12,18 @@ Create `.github/workflows/release.yml`:
 on:
   workflow_dispatch:
     inputs:
+      release_type:
+        type: choice
+        required: true
+        description: "Type of release"
+        default: "release"
+        options:
+          - release
+          - hotfix
       version:
         type: string
-        required: true
-        description: "Version to release"
+        required: false
+        description: "Version to release (required for hotfix)"
   pull_request:
     types:
       - closed
@@ -32,6 +40,7 @@ jobs:
           develop_branch: "develop"
           main_branch: "main"
           merge_back_from_main: false
+          release_type: ${{ inputs.release_type }}
           version: ${{ inputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -41,15 +50,16 @@ jobs:
 
 | Name                   | Description                                                                                                                                                                                                                                                                | Default   |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `release_type`         | Type of release to create. Either `"release"` or `"hotfix"`. For release: creates branch from develop. For hotfix: creates branch from main and requires version to be specified.                                                                                         | `"release"` |
 | `develop_branch`       | Name of the develop branch                                                                                                                                                                                                                                                 | `develop` |
 | `main_branch`          | Name of the main branch                                                                                                                                                                                                                                                    | `main`    |
 | `merge_back_from_main` | If `"true"`, there will be a merge back from `main` instead of the release branch to `develop` after a release is created. See [this Stackoverflow discussion](https://stackoverflow.com/questions/46604715/gitflow-merging-release-bugfixes-back-to-develop-from-master). | `"false"` |
-| `version`              | Version to release                                                                                                                                                                                                                                                         |           |
+| `version`              | Version to release. Required for hotfix releases.                                                                                                                                                                                                                         |           |
 | `version_increment`    | If `version` is not specified, this value will be used to increment the version based on semver. Valid values are `major`, `minor`, `patch`, `premajor`, `preminor`, `prepatch`, `prerelease`. If `version` is specified, this value will be ignored.                      |           |
 | `dry_run`              | If `"true"`, the action will not create any PRs or releases. It will only print out the steps it would take and some outputs like pull_numbers_in_release.                                                                                                                 | `"false"` |
 | `release_summary`      | Specify the release summary to be put in the last section of the release PR                                                                                                                                                                                                | `""`      |
 
-Alternatively, the following environment variables can be used: `DEVELOP_BRANCH`, `MAIN_BRANCH`, `MERGE_BACK_FROM_MAIN`, `VERSION`, `DRY_RUN`, `RELEASE_SUMMARY`.
+Alternatively, the following environment variables can be used: `RELEASE_TYPE`, `DEVELOP_BRANCH`, `MAIN_BRANCH`, `MERGE_BACK_FROM_MAIN`, `VERSION`, `DRY_RUN`, `RELEASE_SUMMARY`.
 
 ## Outputs
 
@@ -75,9 +85,26 @@ There are two different workflows covered by this action:
 
 This applies when this workflow is triggered from the "Run workflow" window (`workflow_dispatch`).
 
-The process of creating a release start with creating a PR with release note that contains all the new changes in the body. The new branch would be called `release/x.y.z`.
+#### Release Workflow
+When `release_type` is set to `"release"` (default):
 
-This basically "freezes" the `develop` branch for releases. Other PRs can be merged to `develop` during the `release` branch lifetime without affecting it.
+1. Creates a `release/x.y.z` branch from the `develop` branch
+2. Generates release notes comparing `develop` branch changes since the last release
+3. Creates a PR from `release/x.y.z` → `main` branch
+4. When merged, creates a GitHub release and merges back to `develop`
+
+This "freezes" the `develop` branch for releases. Other PRs can be merged to `develop` during the `release` branch lifetime without affecting it.
+
+#### Hotfix Workflow
+When `release_type` is set to `"hotfix"`:
+
+1. **Requires** a `version` to be specified (e.g., "1.2.3")
+2. Creates a `hotfix/x.y.z` branch from the `main` branch (not develop)
+3. Generates release notes comparing `main` branch changes since the last release
+4. Creates a PR from `hotfix/x.y.z` → `main` branch
+5. When merged, creates a GitHub release and merges back to `develop`
+
+This allows for urgent fixes to be deployed without including unreleased changes from the `develop` branch.
 
 ### Workflows for release lifecycle
 
