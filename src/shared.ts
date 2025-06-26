@@ -8,6 +8,7 @@ if (!githubToken) throw new Error(`process.env.GITHUB_TOKEN is not defined`);
 export const octokit = github.getOctokit(githubToken);
 
 export const Config = {
+  releaseType: core.getInput("release_type") || process.env.RELEASE_TYPE || "release",
   developBranch:
     core.getInput("develop_branch") || process.env.DEVELOP_BRANCH || "",
   prodBranch: core.getInput("main_branch") || process.env.MAIN_BRANCH || "",

@@ -6,20 +6,25 @@ import { createExplainComment, truncatePrDescription } from "./utils.js";
 
 export async function createReleasePR(): Promise<Result> {
   const isDryRun = Config.isDryRun;
+  const isHotfix = Config.releaseType === "hotfix";
 
-  const developBranchSha = (
+  // For hotfix, create branch from main_branch; for release, create from develop_branch
+  const sourceBranch = isHotfix ? Config.prodBranch : Config.developBranch;
+  const branchPrefix = isHotfix ? Config.hotfixBranchPrefix : Config.releaseBranchPrefix;
+
+  const sourceBranchSha = (
     await octokit.rest.repos.getBranch({
       ...Config.repo,
-      branch: Config.developBranch,
+      branch: sourceBranch,
     })
   ).data.commit.sha;
 
   console.log(
-    `create_release: Generating release notes for ${developBranchSha}`,
+    `create_release: Generating ${Config.releaseType} notes for ${sourceBranchSha} from ${sourceBranch}`,
   );
 
-  // developBranch and mainBranch are almost identical
-  // so we can use developBranch for ahead-of-time release note
+
+
   const { data: latestRelease } = await octokit.rest.repos
     .getLatestRelease(Config.repo)
     .catch(() => ({ data: null }));
@@ -42,13 +47,18 @@ export async function createReleasePR(): Promise<Result> {
     }
     version = increasedVersion;
   } else {
-    version = developBranchSha;
+    version = sourceBranchSha;
   }
 
+  // For release notes, we want to compare against the appropriate base
+  // For hotfix: compare from main to main (will show commits since last release)
+  // For release: compare from develop to develop (will show all new commits)
+  const releaseNotesBase = isHotfix ? Config.prodBranch : Config.developBranch;
+  
   const { data: releaseNotes } = await octokit.rest.repos.generateReleaseNotes({
     ...Config.repo,
     tag_name: version,
-    target_commitish: Config.developBranch,
+    target_commitish: releaseNotesBase,
     previous_tag_name: latest_release_tag_name,
   });
 
@@ -62,24 +72,28 @@ ${Config.releaseSummary}
   // Truncate the PR body if it exceeds GitHub's character limit
   const truncatedReleasePrBody = truncatePrDescription(releasePrBody);
 
-  const releaseBranch = `${Config.releaseBranchPrefix}${version}`;
+  const releaseBranch = `${branchPrefix}${version}`;
   let pull_number;
 
   if (!isDryRun) {
-    console.log(`create_release: Creating release branch`);
+    console.log(`create_release: Creating ${Config.releaseType} branch ${releaseBranch} from ${sourceBranch}`);
 
-    // create release branch from latest sha of develop branch
+    // create release/hotfix branch from latest sha of source branch
     await octokit.rest.git.createRef({
       ...Config.repo,
       ref: `refs/heads/${releaseBranch}`,
-      sha: developBranchSha,
+      sha: sourceBranchSha,
     });
 
     console.log(`create_release: Creating Pull Request`);
 
+    const prTitle = isHotfix 
+      ? `HOTFIX: ${releaseNotes.name || version}`
+      : `RELEASE: ${releaseNotes.name || version}`;
+
     const { data: pullRequest } = await octokit.rest.pulls.create({
       ...Config.repo,
-      title: `Release ${releaseNotes.name || version}`,
+      title: prTitle,
       body: truncatedReleasePrBody,
       head: releaseBranch,
       base: Config.prodBranch,
@@ -91,7 +105,7 @@ ${Config.releaseSummary}
     await octokit.rest.issues.addLabels({
       ...Config.repo,
       issue_number: pullRequest.number,
-      labels: ["release"],
+      labels: [Config.releaseType],
     });
 
     await createExplainComment(pullRequest.number);
@@ -101,7 +115,7 @@ ${Config.releaseSummary}
     );
   } else {
     console.log(
-      `create_release: Dry run: would have created release branch ${releaseBranch} and PR with body:\n${truncatedReleasePrBody}`,
+      `create_release: Dry run: would have created ${Config.releaseType} branch ${releaseBranch} from ${sourceBranch} and PR with body:\n${truncatedReleasePrBody}`,
     );
   }
 
@@ -113,7 +127,7 @@ ${Config.releaseSummary}
   mergedPrNumbers = Array.from(new Set(mergedPrNumbers)).sort();
 
   return {
-    type: "release",
+    type: isHotfix ? "hotfix" : "release",
     pull_number: pull_number,
     pull_numbers_in_release: mergedPrNumbers.join(","),
     version,
