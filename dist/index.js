@@ -49903,6 +49903,27 @@ ${Config.releaseSummary}
             ref: `refs/heads/${releaseBranch}`,
             sha: sourceBranchSha,
         });
+        // For hotfix branches, create an initial commit to ensure we can create a PR
+        if (isHotfix) {
+            console.log(`create_release: Creating initial commit on ${releaseBranch} branch`);
+            // Create an empty commit to initialize the hotfix branch
+            const { data: commit } = await octokit.rest.git.createCommit({
+                ...Config.repo,
+                message: `Initialize hotfix branch for version ${version}`,
+                tree: (await octokit.rest.git.getCommit({
+                    ...Config.repo,
+                    commit_sha: sourceBranchSha,
+                })).data.tree.sha,
+                parents: [sourceBranchSha],
+            });
+            // Update the branch reference to point to the new commit
+            await octokit.rest.git.updateRef({
+                ...Config.repo,
+                ref: `heads/${releaseBranch}`,
+                sha: commit.sha,
+            });
+            console.log(`create_release: Initial commit created on ${releaseBranch}: ${commit.sha}`);
+        }
         console.log(`create_release: Creating Pull Request`);
         const prTitle = isHotfix
             ? `HOTFIX: ${releaseNotes.name || version}`
