@@ -49897,15 +49897,10 @@ ${Config.releaseSummary}
     let pull_number;
     if (!isDryRun) {
         console.log(`create_release: Creating ${Config.releaseType} branch ${releaseBranch} from ${sourceBranch}`);
-        // create release/hotfix branch from latest sha of source branch
-        await octokit.rest.git.createRef({
-            ...Config.repo,
-            ref: `refs/heads/${releaseBranch}`,
-            sha: sourceBranchSha,
-        });
+        let finalBranchSha = sourceBranchSha;
         // For hotfix branches, create an initial commit to ensure we can create a PR
         if (isHotfix) {
-            console.log(`create_release: Creating initial commit on ${releaseBranch} branch`);
+            console.log(`create_release: Creating initial commit for ${releaseBranch} branch`);
             // Create an empty commit to initialize the hotfix branch
             const { data: commit } = await octokit.rest.git.createCommit({
                 ...Config.repo,
@@ -49916,14 +49911,16 @@ ${Config.releaseSummary}
                 })).data.tree.sha,
                 parents: [sourceBranchSha],
             });
-            // Update the branch reference to point to the new commit
-            await octokit.rest.git.updateRef({
-                ...Config.repo,
-                ref: `heads/${releaseBranch}`,
-                sha: commit.sha,
-            });
-            console.log(`create_release: Initial commit created on ${releaseBranch}: ${commit.sha}`);
+            finalBranchSha = commit.sha;
+            console.log(`create_release: Initial commit created: ${commit.sha}`);
         }
+        // Create release/hotfix branch pointing to the final SHA (either source or new commit)
+        await octokit.rest.git.createRef({
+            ...Config.repo,
+            ref: `refs/heads/${releaseBranch}`,
+            sha: finalBranchSha,
+        });
+        console.log(`create_release: Branch ${releaseBranch} created pointing to ${finalBranchSha}`);
         console.log(`create_release: Creating Pull Request`);
         const prTitle = isHotfix
             ? `HOTFIX: ${releaseNotes.name || version}`
