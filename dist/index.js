@@ -48905,7 +48905,7 @@ const PR_EXPLAIN_MESSAGE = `Merging this pull request will trigger Gitflow relea
 See [Gitflow Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) for more details.`;
 
 const GITHUB_PR_BODY_LIMIT = 65536;
-async function tryMerge(headBranch, baseBranch) {
+async function tryMerge(headBranch, baseBranch, version) {
     console.log(`Trying to merge ${headBranch} branch into ${baseBranch} branch.`);
     let compareCommitsResult;
     try {
@@ -48932,12 +48932,15 @@ async function tryMerge(headBranch, baseBranch) {
         catch {
             // could not automatically merge
             // try creating a PR
+            const title = version
+                ? `MERGE: ${version} into ${baseBranch}`
+                : `Merge ${headBranch} branch into ${baseBranch}`;
             await octokit.rest.pulls
                 .create({
                 ...Config.repo,
                 base: baseBranch,
                 head: headBranch,
-                title: `Merge ${headBranch} branch into ${baseBranch}`,
+                title,
                 body: `In Gitflow, \`release\` and \`hotfix\` branches get merged back into \`develop\` branch.
 See [Gitflow Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) for more details.`,
             })
@@ -49106,7 +49109,7 @@ async function executeOnRelease() {
      * Merging the release or hotfix branch back to the develop branch if needed
      */
     console.log(`on-release: ${releaseCandidateType}(${version}): Execute merge workflow`);
-    await tryMerge(Config.mergeBackFromProd ? Config.prodBranch : currentBranch, Config.developBranch);
+    await tryMerge(Config.mergeBackFromProd ? Config.prodBranch : currentBranch, Config.developBranch, version);
     console.log(`on-release: success`);
     console.log(`post-release: process release ${release.name}`);
     if (Config.slackOptionsStr) {
