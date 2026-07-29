@@ -4,7 +4,11 @@ import { Config, octokit } from "./shared.js";
 
 const GITHUB_PR_BODY_LIMIT = 65536;
 
-export async function tryMerge(headBranch: string, baseBranch: string) {
+export async function tryMerge(
+  headBranch: string,
+  baseBranch: string,
+  version?: string,
+) {
   console.log(
     `Trying to merge ${headBranch} branch into ${baseBranch} branch.`,
   );
@@ -36,12 +40,15 @@ export async function tryMerge(headBranch: string, baseBranch: string) {
     } catch {
       // could not automatically merge
       // try creating a PR
+      const title = version
+        ? `MERGE: ${version} into ${baseBranch}`
+        : `Merge ${headBranch} branch into ${baseBranch}`;
       await octokit.rest.pulls
         .create({
           ...Config.repo,
           base: baseBranch,
           head: headBranch,
-          title: `Merge ${headBranch} branch into ${baseBranch}`,
+          title,
           body: `In Gitflow, \`release\` and \`hotfix\` branches get merged back into \`develop\` branch.
 See [Gitflow Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) for more details.`,
         })

@@ -103,6 +103,7 @@ async function executeOnRelease(): Promise<Result> {
   await tryMerge(
     Config.mergeBackFromProd ? Config.prodBranch : currentBranch,
     Config.developBranch,
+    version,
   );
 
   console.log(`on-release: success`);
